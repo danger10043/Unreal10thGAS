@@ -22,6 +22,9 @@ public:
 
 	UStatAttributeSet* GetStatAttribute() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "GAS")
+	bool ApplyMaxHealthMultiplier(float Multiplier);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -38,9 +41,14 @@ protected:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
-	TObjectPtr<UAbilitySystemComponent> AbilitiSystemComponent;
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UStatAttributeSet> StatAttributeSet;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS")
+	TSubclassOf<class UGameplayEffect> MaxHealthEffectClass;
+
+	FActiveGameplayEffectHandle MaxHealthEffectHandle;
 
 };

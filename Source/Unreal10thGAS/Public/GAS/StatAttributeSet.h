@@ -44,10 +44,20 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Base Stat")
 	FGameplayAttributeData MaxStamina;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, MaxStamina);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Base Stat")
+	FGameplayAttributeData Defense;
+	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, Defense);
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Meta Attribute")
 	FGameplayAttributeData Damage;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, Damage);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Meta Attribute")
+	FGameplayAttributeData StaminaCost;
+	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, StaminaCost);
+
+
 };
 
 /*

@@ -26,9 +26,9 @@ void ATestEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	//UE_LOG(LogTemp, Log, TEXT("BeginPlay"));
-	if (IsValid(AbilitiSystemComponent))
+	if (IsValid(AbilitySystemComponent))
 	{
-		AbilitiSystemComponent->InitAbilityActorInfo(this, this);	// 타이밍 문제로 추가 처리
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);	// 타이밍 문제로 추가 처리
 		InitializeOverHeadWidget();
 	}
 }

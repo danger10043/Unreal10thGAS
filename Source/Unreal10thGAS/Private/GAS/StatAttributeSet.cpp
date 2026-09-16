@@ -10,6 +10,10 @@ UStatAttributeSet::UStatAttributeSet()
 
 	InitStamina(100.0f);
 	InitMaxStamina(100.0f);
+
+	InitDefense(10.0f);
+	InitDamage(0.0f);
+	InitStaminaCost(0.0f);
 }
 
 void UStatAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -34,6 +38,14 @@ void UStatAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 		// 최대 체력이 증가하면 그만큼 현재 채력도 증가한다.
 		// 최대 체력이 감소하면 최대 체력 이상분만 제거한다.
 	}
+	else if (Attribute == GetStaminaAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxStamina());
+	}
+	else if (Attribute == GetMaxStaminaAttribute() || Attribute == GetDefenseAttribute())
+	{
+		NewValue = FMath::Max(0.0f, NewValue);
+	}
 }
 
 void UStatAttributeSet::PostAttributeChange(const FGameplayAttribute & Attribute, float OldValue, float NewValue)
@@ -45,6 +57,16 @@ void UStatAttributeSet::PostAttributeChange(const FGameplayAttribute & Attribute
 		UE_LOG(LogTemp, Log, TEXT("[UStatAttributeSet] Health 변경됨 : (%.1f) -> (%.1f)"), OldValue, NewValue);
 		//GetOwningAbilitySystemComponent();
 		//GetOwningActor();
+	}
+	else if (Attribute == GetMaxHealthAttribute())
+	{
+		const float HealthIncrease = FMath::Max(NewValue - OldValue, 0.0f);
+		const float NewHealth = FMath::Clamp(GetHealth() + HealthIncrease, 0.0f, NewValue);
+		SetHealth(NewHealth);
+	}
+	else if (Attribute == GetMaxStaminaAttribute())
+	{
+		SetStamina(FMath::Clamp(GetStamina(), 0.0f, NewValue));
 	}
 }
 
@@ -64,10 +86,20 @@ void UStatAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 		if (LocalDamage > 0)
 		{
-			const float FinalDamage = LocalDamage;	// 각 종 계산 추가(방어력, 최소대미지보장, 쉴드, 피해 증가 등등)
+			const float FinalDamage = FMath::Max(LocalDamage - FMath::Max(GetDefense(), 0.0f), 0.0f);
 			const float NewHealth = FMath::Clamp(GetHealth() - FinalDamage, 0.0f, GetMaxHealth());
 			SetHealth(NewHealth);
 		}
+	}
+	else if (Data.EvaluatedData.Attribute == GetStaminaCostAttribute())
+	{
+		const float LocalStaminaCost = GetStaminaCost();
+		SetStaminaCost(0.0f);
 
+		if (LocalStaminaCost > 0.0f)
+		{
+			const float NewStamina = FMath::Clamp(GetStamina() - LocalStaminaCost, 0.0f, GetMaxStamina());
+			SetStamina(NewStamina);
+		}
 	}
 }
