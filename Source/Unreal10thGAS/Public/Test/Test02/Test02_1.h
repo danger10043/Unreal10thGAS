@@ -32,5 +32,17 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
 	float EffectLevel = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS", meta = (ClampMin = "0.01"))
+	float MaxHealthMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS", meta = (ClampMin = "0.0"))
+	float DamageAmount = 40.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS", meta = (ClampMin = "0.0"))
+	float DefenseAmount = 20.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS", meta = (ClampMin = "0.0"))
+	float StaminaCostAmount = 25.0f;
 	
 };

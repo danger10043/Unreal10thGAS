@@ -5,8 +5,7 @@
 #include "GAS/StatAttributeSet.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
-#include "Components/ProgressBar.h"
-#include "Components/TextBlock.h"
+#include "Widget/HealthBarWidget.h"
 
 void UOverHeadWidget::InitializeWithAbilitySystem(AActor* InActor)
 {
@@ -50,13 +49,17 @@ void UOverHeadWidget::OnMaxHealthChanged(const FOnAttributeChangeData & InData)
 void UOverHeadWidget::UpdateHealthUI(float InCurrent, float InMax)
 {
 	const float Percent = FMath::IsNearlyZero(InMax) ? 0.0f : FMath::Clamp(InCurrent / InMax, 0.0f, 1.0f);
-	if (HealthProgressBar)
+	if (IsValid(HealthBarWidget))
 	{
-		HealthProgressBar->SetPercent(Percent);
+		HealthBarWidget->SetHealth(InCurrent, InMax);
 	}
-	if (HealthText)
+	else
 	{
-		HealthText->SetText(FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), InCurrent, InMax)));
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("OverHeadWidget::UpdateHealthUI - HealthBarWidget이 유효하지 않습니다.")
+		);
 	}
 	BP_OnHealthChanged(InCurrent, InMax, Percent);
 }
