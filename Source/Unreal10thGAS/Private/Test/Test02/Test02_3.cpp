@@ -1,18 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Test/Test02/Test02_2.h"
-#include "AbilitySystemComponent.h"
-#include "GAS/StatAttributeSet.h"
+#include "Test/Test02/Test02_3.h"
 #include "Test/TestCharacter.h"
 
-ATest02_2::ATest02_2()
+#include "AbilitySystemComponent.h"
+#include "GameplayEffect.h"
+
+
+ATest02_3::ATest02_3()
 {
-    ASC = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("ASC"));
-    Stat = CreateDefaultSubobject<UStatAttributeSet>(TEXT("Stat"));
+	SetByCallerTag = FGameplayTag::RequestGameplayTag(FName("GAS.Test.SetByCaller"), false);
 }
 
-void ATest02_2::ApplyGameplayEffect()
+void ATest02_3::ApplyGameplayEffect()
 {
     if (!Target) return;
     if (!GameplayEffectClass) return;
@@ -31,29 +32,19 @@ void ATest02_2::ApplyGameplayEffect()
     FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GameplayEffectClass, EffectLevel, EffectContext);
     if (!SpecHandle.IsValid()) return;
 
+    // 태그 확인
+    if (!SetByCallerTag.IsValid())
+    {
+        SetByCallerTag = FGameplayTag::RequestGameplayTag(FName("GAS.Test.SetByCaller"), false);
+    }
+    // SetByCaller를 이용해 값 주입
+    if (SetByCallerTag.IsValid())
+    {
+        SpecHandle.Data->SetSetByCallerMagnitude(SetByCallerTag, SetByCallerMagnitude);
+    }
+
     // ASC가 대상에게 스팩 적용
     FActiveGameplayEffectHandle ActiveEffectHandle = ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-    //ActiveEffectHandle.WasSuccessfullyApplied()
-}
 
-UAbilitySystemComponent* ATest02_2::GetAbilitySystemComponent() const
-{
-    return ASC;
-}
-
-UStatAttributeSet* ATest02_2::GetStatAttributeSet() const
-{
-    return Stat;
-}
-
-void ATest02_2::BeginPlay()
-{
-    Super::BeginPlay();
-    if (ASC)
-    {
-        UE_LOG(LogTemp, Log, TEXT("BeginPlay"));
-        ASC->InitAbilityActorInfo(this, this);
-        
-        UE_LOG(LogTemp, Log, TEXT("AttackPower : %.1f"), Stat->GetAttackPower());
-    }
+    
 }

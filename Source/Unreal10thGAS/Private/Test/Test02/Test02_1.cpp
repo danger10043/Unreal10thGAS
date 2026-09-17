@@ -60,7 +60,7 @@ void ATest02_1::ApplyGameplayEffect()
 	// 컨택스트 설정(이펙트의 정보들을 설정)
 	FGameplayEffectContextHandle EffectContext = TargetASC->MakeEffectContext();
 	EffectContext.AddSourceObject(this);
-	EffectContext.AddInstigator(GetInstigator(), this);
+	EffectContext.AddInstigator(this, this);
 
 	// 이팩트 스팩 설정
 	FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(GameplayEffectClass, EffectLevel, EffectContext);
