@@ -29,6 +29,7 @@ public:
 	// 이펙트가 적용 된 후에 실행되는 함수
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 
+	// ------------------------------------------------------------------
 	UPROPERTY(BlueprintReadOnly, Category = "Base Stat")
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, Health);
@@ -44,10 +45,29 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Base Stat")
 	FGameplayAttributeData MaxStamina;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, MaxStamina);
-	
+	// ------------------------------------------------------------------
+	UPROPERTY(BlueprintReadOnly, Category = "Attack Stat")
+	FGameplayAttributeData AttackPower;
+	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, AttackPower);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attack Stat")
+	FGameplayAttributeData DefencePower;
+	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, DefencePower);
+	// ------------------------------------------------------------------
 	UPROPERTY(BlueprintReadOnly, Category = "Meta Attribute")
 	FGameplayAttributeData Damage;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, Damage);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Meta Attribute")
+	FGameplayAttributeData StaminaCost;
+	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, StaminaCost);
+
+protected:
+	// 최대값이 변경 되었을 때 현재 값을 보정하는 함수
+	void AdjustAttributeForMaxChange(
+		float InOldValue,
+		float InNewMaxValue,
+		const FGameplayAttribute& AffectedAttributeProperty);
 };
 
 /*
