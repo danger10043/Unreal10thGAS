@@ -5,8 +5,7 @@
 #include "GAS/StatAttributeSet.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
-#include "Components/ProgressBar.h"
-#include "Components/TextBlock.h"
+#include "Widget/StaminaBarWidget.h"
 
 void UStatWidget::InitializeWithAbilitySystem(AActor* InActor)
 {
@@ -46,13 +45,9 @@ void UStatWidget::OnMaxStaminaChanged(const FOnAttributeChangeData & InData)
 void UStatWidget::UpdateStaminaUI(float InCurrent, float InMax)
 {
 	const float Percent = FMath::IsNearlyZero(InMax) ? 0.0f : FMath::Clamp(InCurrent / InMax, 0.0f, 1.0f);
-	if (StaminaProgressBar)
+	if (IsValid(StaminaBarWidget))
 	{
-		StaminaProgressBar->SetPercent(Percent);
-	}
-	if (StaminaText)
-	{
-		StaminaText->SetText(FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), InCurrent, InMax)));
+		StaminaBarWidget->SetStamina(InCurrent, InMax);
 	}
 	BP_OnStaminaChanged(InCurrent, InMax, Percent);
 }

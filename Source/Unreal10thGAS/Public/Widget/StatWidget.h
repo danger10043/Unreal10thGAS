@@ -28,10 +28,7 @@ protected:
 
 protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UProgressBar> StaminaProgressBar;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> StaminaText;
+	TObjectPtr<class UStaminaBarWidget> StaminaBarWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float CurrentStamina = 0.0f;

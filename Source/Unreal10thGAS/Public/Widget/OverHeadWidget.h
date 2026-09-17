@@ -9,9 +9,7 @@
 
 class UProgressBar;
 class UTextBlock;
-/**
- * 
- */
+
 UCLASS()
 class UNREAL10THGAS_API UOverHeadWidget : public UUserWidget
 {
@@ -31,10 +29,7 @@ protected:
 	
 protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UProgressBar> HealthProgressBar;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> HealthText;
+	TObjectPtr<class UHealthBarWidget> HealthBarWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float CurrentHealth = 0.0f;
