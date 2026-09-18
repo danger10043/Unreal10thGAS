@@ -108,7 +108,7 @@ void ATestCharacter::PossessedBy(AController* NewController)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
-		//FOnGameplayAttributeValueChange& HealthChange = AbilitiSystemComponent->GetGameplayAttributeValueChangeDelegate(UStatAttributeSet::GetHealthAttribute());
+		//FOnGameplayAttributeValueChange& HealthChange = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UStatAttributeSet::GetHealthAttribute());
 		//HealthChange.AddUObject(this, &ATestCharacter::OnHealthChanged);
 	}
 }
