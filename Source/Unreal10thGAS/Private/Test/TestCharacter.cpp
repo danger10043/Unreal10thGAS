@@ -11,14 +11,14 @@ ATestCharacter::ATestCharacter()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	AbilitiSystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("ASC"));
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("ASC"));
 	StatAttributeSet = CreateDefaultSubobject<UStatAttributeSet>(TEXT("Stat"));
 
 }
 
 UAbilitySystemComponent* ATestCharacter::GetAbilitySystemComponent() const
 {
-	return AbilitiSystemComponent;
+	return AbilitySystemComponent;
 }
 
 UStatAttributeSet* ATestCharacter::GetStatAttribute() const
@@ -50,11 +50,11 @@ void ATestCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	if (IsValid(AbilitiSystemComponent))
+	if (IsValid(AbilitySystemComponent))
 	{
-		AbilitiSystemComponent->InitAbilityActorInfo(this, this);
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
-		//FOnGameplayAttributeValueChange& HealthChange = AbilitiSystemComponent->GetGameplayAttributeValueChangeDelegate(UStatAttributeSet::GetHealthAttribute());
+		//FOnGameplayAttributeValueChange& HealthChange = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UStatAttributeSet::GetHealthAttribute());
 		//HealthChange.AddUObject(this, &ATestCharacter::OnHealthChanged);
 	}
 }
