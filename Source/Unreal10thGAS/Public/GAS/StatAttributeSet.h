@@ -51,6 +51,10 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, AttackPower);
 
 	UPROPERTY(BlueprintReadOnly, Category = "Attack Stat")
+	FGameplayAttributeData CriticalChance;	// 치명타 확률(0.0 ~ 1.0)
+	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, CriticalChance);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attack Stat")
 	FGameplayAttributeData DefencePower;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, DefencePower);
 	// ------------------------------------------------------------------

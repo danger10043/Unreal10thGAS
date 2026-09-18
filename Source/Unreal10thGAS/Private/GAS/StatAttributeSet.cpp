@@ -12,6 +12,7 @@ UStatAttributeSet::UStatAttributeSet()
 	InitMaxStamina(100.0f);
 
 	InitAttackPower(10.0f);
+	InitCriticalChance(0.2f);
 	InitDefencePower(5.0f);
 
 	InitDamage(0.0f);
