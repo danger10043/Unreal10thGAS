@@ -11,6 +11,9 @@ UStatAttributeSet::UStatAttributeSet()
 	InitStamina(100.0f);
 	InitMaxStamina(100.0f);
 
+	InitMaxJumpCharge(100.0f);
+	InitCurrentJumpCharge(0.0f);
+
 	InitAttackPower(10.0f);
 	InitDefencePower(5.0f);
 
@@ -21,6 +24,15 @@ UStatAttributeSet::UStatAttributeSet()
 void UStatAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
+
+	if (Attribute == GetCurrentJumpChargeAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, FMath::Max(0.0f, GetMaxJumpCharge()));
+	}
+	else if (Attribute == GetMaxJumpChargeAttribute())
+	{
+		NewValue = FMath::Max(0.0f, NewValue);
+	}
 
 	if (Attribute == GetHealthAttribute())
 	{
@@ -37,6 +49,11 @@ void UStatAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 void UStatAttributeSet::PostAttributeChange(const FGameplayAttribute & Attribute, float OldValue, float NewValue)
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
+
+	if (Attribute == GetMaxJumpChargeAttribute() && GetCurrentJumpCharge() > NewValue)
+	{
+		SetCurrentJumpCharge(FMath::Max(0.0f, NewValue));
+	}
 
 	if (Attribute == GetHealthAttribute())
 	{
@@ -64,5 +81,19 @@ void UStatAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 			SetHealth(NewHealth);
 		}
 
+	}
+}
+
+void UStatAttributeSet::PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const
+{
+	Super::PreAttributeBaseChange(Attribute, NewValue);
+
+	if (Attribute == GetCurrentJumpChargeAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, FMath::Max(0.0f, GetMaxJumpCharge()));
+	}
+	else if (Attribute == GetMaxJumpChargeAttribute())
+	{
+		NewValue = FMath::Max(0.0f, NewValue);
 	}
 }
