@@ -23,6 +23,11 @@ public:
 		const FGameplayAbilityActivationInfo ActivationInfo, 
 		const FGameplayEventData* TriggerEventData) override;
 
+	virtual bool CheckCost(
+		const FGameplayAbilitySpecHandle Handle, 
+		const FGameplayAbilityActorInfo* ActorInfo, 
+		OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+
 protected:
 	// 블링크 목적지 계산 및 충돌 검사
 	virtual FVector CalcuateBlinkDestination(const ACharacter* InCharacter, float InDistance) const;

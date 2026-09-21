@@ -58,6 +58,10 @@ public:
 	FGameplayAttributeData DefencePower;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, DefencePower);
 	// ------------------------------------------------------------------
+	UPROPERTY(BlueprintReadOnly, Category = "Movement Stat")
+	FGameplayAttributeData MoveSpeed;
+	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, MoveSpeed);
+	// ------------------------------------------------------------------
 	UPROPERTY(BlueprintReadOnly, Category = "Meta Attribute")
 	FGameplayAttributeData Damage;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, Damage);
