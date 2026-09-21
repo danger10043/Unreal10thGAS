@@ -71,7 +71,7 @@ void UGameplayAbility_Sprint::ActivateAbility(const FGameplayAbilitySpecHandle H
 		UAbilityTask_WaitInputPress* WaitPressTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
 		if (WaitPressTask)
 		{
-			WaitPressTask->OnPress.AddDynamic(this, &UGameplayAbility_Sprint::OnWatInputPressCallback);
+			WaitPressTask->OnPress.AddDynamic(this, &UGameplayAbility_Sprint::OnWaitInputPressCallback);
 			WaitPressTask->ReadyForActivation();
 			//UE_LOG(LogTemp, Log, TEXT("UGameplayAbility_Sprint : 테스크 실행. UAbilityTask_WaitInputPress "));
 		}
@@ -81,7 +81,7 @@ void UGameplayAbility_Sprint::ActivateAbility(const FGameplayAbilitySpecHandle H
 		UAbilityTask_WaitInputRelease* WaitReleaseTask = UAbilityTask_WaitInputRelease::WaitInputRelease(this);
 		if (WaitReleaseTask)
 		{
-			WaitReleaseTask->OnRelease.AddDynamic(this, &UGameplayAbility_Sprint::OnWatInputReleaseCallback);
+			WaitReleaseTask->OnRelease.AddDynamic(this, &UGameplayAbility_Sprint::OnWaitInputReleaseCallback);
 			WaitReleaseTask->ReadyForActivation();
 			//UE_LOG(LogTemp, Log, TEXT("UGameplayAbility_Sprint : 테스크 실행. UAbilityTask_WaitInputRelease "));
 		}
@@ -90,9 +90,9 @@ void UGameplayAbility_Sprint::ActivateAbility(const FGameplayAbilitySpecHandle H
 
 void UGameplayAbility_Sprint::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo * ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	if (!IsActive())
+	if (!IsActive())	// 동시 종료에 대비한 방어 코드
 	{
-		return;
+		return;	
 	}
 
 	UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
@@ -157,7 +157,7 @@ void UGameplayAbility_Sprint::OnStatminaChanged(const FOnAttributeChangeData& In
 	}
 }
 
-void UGameplayAbility_Sprint::OnWatInputReleaseCallback(float InTimeHeld)
+void UGameplayAbility_Sprint::OnWaitInputReleaseCallback(float InTimeHeld)
 {
 	if (!bToggleMode && IsActive())
 	{
@@ -165,7 +165,7 @@ void UGameplayAbility_Sprint::OnWatInputReleaseCallback(float InTimeHeld)
 	}
 }
 
-void UGameplayAbility_Sprint::OnWatInputPressCallback(float InElapsedTime)
+void UGameplayAbility_Sprint::OnWaitInputPressCallback(float InElapsedTime)
 {
 	if (bToggleMode && IsActive())
 	{
