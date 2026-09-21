@@ -50,6 +50,66 @@ void UGameplayAbility_Blink::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);	// 성공적으로 끝났다.
 }
 
+bool UGameplayAbility_Blink::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags) const
+{
+	// 필요한 데이터들 있는지 확인
+	UGameplayEffect* CostGE = GetCostGameplayEffect();
+	if (!CostGE) return true;
+
+	UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
+	if (!ASC) return false;
+
+	if(!ASC->HasAttributeSetForAttribute(UStatAttributeSet::GetStaminaAttribute())
+		|| !ASC->HasAttributeSetForAttribute(UStatAttributeSet::GetStaminaCostAttribute()) )
+		return false;
+
+	// 시전자의 현재 Stamina값 가져오기
+	const float CurrentStamina = ASC->GetNumericAttribute(UStatAttributeSet::GetStaminaAttribute());
+	
+	// 필요 소모량을 알기 위해 Spec 생성
+	const FGameplayEffectContextHandle EffectContext = MakeEffectContext(Handle, ActorInfo);
+	const float AbilityLevel = GetAbilityLevel(Handle, ActorInfo);
+	FGameplayEffectSpec Spec(CostGE, EffectContext, AbilityLevel);
+	Spec.CalculateModifierMagnitudes();	// 이 스펙에 해당하는 모디파이어 계산
+
+	// GE에서 StaminaCost 추출하기
+	float StaminaCost = 0.0f;
+	bool bFoundStaminaModifier = false;
+	for (int32 ModIndex = 0; ModIndex < Spec.Modifiers.Num(); ModIndex++)
+	{
+		if (Spec.Def && Spec.Def->Modifiers.IsValidIndex(ModIndex))
+		{
+			const FGameplayModifierInfo& ModDef = Spec.Def->Modifiers[ModIndex];
+			if (ModDef.Attribute == UStatAttributeSet::GetStaminaCostAttribute())
+			{
+				const FModifierSpec& ModSpec = Spec.Modifiers[ModIndex];
+				StaminaCost += ModSpec.GetEvaluatedMagnitude();
+				bFoundStaminaModifier = true;
+			}
+		}
+	}
+
+	// GE에 StaminaCost관련 모디파이어가 없으면 기본 로직 실행
+	if (!bFoundStaminaModifier)
+	{
+		return Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags);
+	}
+
+	// 충분한 스테미너가 있으면 성공
+	if (StaminaCost <= CurrentStamina)
+	{
+		return true;
+	}
+
+	// 스테미너가 없어서 실패했다고 OptionalRelevantTags에 ActivateFailCostTag 기록하기
+	const FGameplayTag& CostTag = UAbilitySystemGlobals::Get().ActivateFailCostTag;
+	if (OptionalRelevantTags && CostTag.IsValid())
+	{
+		OptionalRelevantTags->AddTag(CostTag);
+	}
+	return false;
+}
+
 FVector UGameplayAbility_Blink::CalcuateBlinkDestination(const ACharacter * InCharacter, float InDistance) const
 {
 	if (!InCharacter) return FVector::ZeroVector;
