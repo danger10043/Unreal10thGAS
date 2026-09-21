@@ -66,9 +66,9 @@ private:
 
 	// AbilityTast_WaitInpuRelease 용 콜백
 	UFUNCTION()
-	void OnWatInputReleaseCallback(float InTimeHeld);
+	void OnWaitInputReleaseCallback(float InTimeHeld);
 
 	// AbilityTast_WaitInpuPress 용 콜백
 	UFUNCTION()
-	void OnWatInputPressCallback(float InElapsedTime);
+	void OnWaitInputPressCallback(float InElapsedTime);
 };
