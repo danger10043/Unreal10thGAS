@@ -103,7 +103,7 @@ void UStatAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 		if (LocalCost > 0)
 		{
 			float FinalCost = LocalCost;
-			FinalCost = FMath::Max(1.0f, FinalCost);			// 최소 비용 보장
+			FinalCost = FMath::Max(0.0f, FinalCost);			// 0 이하는 안됨
 
 			const float NewStamina = FMath::Clamp(GetStamina() - FinalCost, 0.0f, GetMaxStamina());
 			SetStamina(NewStamina);
