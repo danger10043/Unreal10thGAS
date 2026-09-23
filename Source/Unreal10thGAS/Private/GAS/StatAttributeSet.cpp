@@ -96,6 +96,16 @@ void UStatAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 			SetHealth(NewHealth);
 		}
 
+		if (LocalCost > 0)
+		{
+			float FinalCost = LocalCost;
+			FinalCost = FMath::Max(0.0f, FinalCost);			// 0 이하는 안됨
+
+			const float NewStamina = FMath::Clamp(GetStamina() - FinalCost, 0.0f, GetMaxStamina());
+			SetStamina(NewStamina);
+
+			// 값에 따른 추가 처리
+		}
 	}
 }
 
