@@ -15,7 +15,10 @@ UStatAttributeSet::UStatAttributeSet()
 	InitCurrentJumpCharge(0.0f);
 
 	InitAttackPower(10.0f);
+	InitCriticalChance(0.2f);
 	InitDefencePower(5.0f);
+	InitMoveSpeed(100.0f);	// 100이 보통 속도. 150이면 원래 속도의 1.5배
+
 
 	InitDamage(0.0f);
 	InitStaminaCost(0.0f);
@@ -43,6 +46,18 @@ void UStatAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 	{
 		// MaxHealth가 변경되려고 해서 호출되었다.
 		NewValue = FMath::Max(0, NewValue);		
+	}
+	else if (Attribute == GetStaminaAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0, GetMaxStamina());
+	}
+	else if (Attribute == GetMaxStaminaAttribute())
+	{
+		NewValue = FMath::Max(0, NewValue);
+	}
+	else if (Attribute == GetMoveSpeedAttribute())
+	{
+		NewValue = FMath::Max(0, NewValue);
 	}
 }
 
