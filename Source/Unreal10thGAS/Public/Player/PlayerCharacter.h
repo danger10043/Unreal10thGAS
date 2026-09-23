@@ -8,8 +8,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UAbilitySystemComponent;
-class UGameplayAbility;
-class UGameplayAbility_PlayerJump;
+class UPlayerAbilitySet;
 class UStatAttributeSet;
 class UInputAction;
 class UInputMappingContext;
@@ -37,14 +36,9 @@ protected:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 
-	void OnJumpStarted();
-	void OnJumpReleased();
-	void OnJumpCanceled();
-
-	static constexpr int32 JumpInputID = 1;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Ability")
-	TSubclassOf<UGameplayAbility_PlayerJump> JumpAbilityClass;
+	void OnAbilityInputPressed(int32 InputID);
+	void OnAbilityInputReleased(int32 InputID);
+	void OnAbilityInputCanceled(int32 InputID);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> PlayerInputMappingContext;
@@ -54,9 +48,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> LookAction;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	TObjectPtr<UInputAction> JumpAction;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -74,7 +65,7 @@ protected:
 	void GiveDefaultAbilities();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Ability")
-	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
+	TObjectPtr<UPlayerAbilitySet> DefaultAbilitySet;
 
 	void OnJumpChargeTagChanged(FGameplayTag Tag, int32 NewCount);
 

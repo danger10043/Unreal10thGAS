@@ -6,7 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GAS/StatAttributeSet.h"
-#include "GAS/Ability/GameplayAbility_PlayerJump.h"
+#include "GAS/Data/PlayerAbilitySet.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
@@ -75,11 +75,35 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	{
 		EnhancedInput->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Look);
 	}
-	if (JumpAction)
+	
+	if (DefaultAbilitySet)
 	{
-		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Started, this, &APlayerCharacter::OnJumpStarted);
-		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &APlayerCharacter::OnJumpReleased);
-		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Canceled, this, &APlayerCharacter::OnJumpCanceled);
+		for (const FPlayerAbilityConfig& Config : DefaultAbilitySet->Abilities)
+		{
+			if (!Config.AbilityClass || !Config.InputAction || Config.InputID == EAbilityInputID::None)
+			{
+				continue;
+			}
+
+			if (Config.AbilityClass->HasAnyClassFlags(CLASS_Abstract))
+			{
+				continue;
+			}
+
+			const int32 InputID = static_cast<int32>(Config.InputID);
+
+			EnhancedInput->BindAction(
+				Config.InputAction, ETriggerEvent::Started,
+				this, &APlayerCharacter::OnAbilityInputPressed, InputID);
+
+			EnhancedInput->BindAction(
+				Config.InputAction, ETriggerEvent::Completed,
+				this, &APlayerCharacter::OnAbilityInputReleased, InputID);
+
+			EnhancedInput->BindAction(
+				Config.InputAction, ETriggerEvent::Canceled,
+				this, &APlayerCharacter::OnAbilityInputCanceled, InputID);
+		}
 	}
 }
 
@@ -151,53 +175,80 @@ void APlayerCharacter::PossessedBy(AController* NewController)
 
 void APlayerCharacter::GiveDefaultAbilities()
 {
-	if (!HasAuthority() || !AbilitySystemComponent) return;
-
-	for (const TSubclassOf<UGameplayAbility>& AbilityClass : DefaultAbilities)
+	if (!HasAuthority() || !AbilitySystemComponent || !DefaultAbilitySet)
 	{
-		if (!AbilityClass) continue;
-		if (AbilityClass->HasAnyClassFlags(CLASS_Abstract)) continue;
-		if (AbilitySystemComponent->FindAbilitySpecFromClass(AbilityClass)) continue;
+		return;
+	}
+	
+	for (const FPlayerAbilityConfig& Config : DefaultAbilitySet->Abilities)
+	{
+		if (!Config.AbilityClass)
+		{
+			continue;
+		}
+		if (Config.AbilityClass->HasAnyClassFlags(CLASS_Abstract))
+		{
+			continue;
+		}
+		if (AbilitySystemComponent->FindAbilitySpecFromClass(Config.AbilityClass))
+		{
+			continue;
+		}
 
-		const int32 InputID =
-			AbilityClass.Get() == JumpAbilityClass.Get() ? JumpInputID : INDEX_NONE;
+		const int32 InputID = Config.InputID == EAbilityInputID::None ? INDEX_NONE : static_cast<int32>(Config.InputID);
 
-		FGameplayAbilitySpec AbilitySpec(AbilityClass, 1, InputID, this);;
-		AbilitySystemComponent->GiveAbility(AbilitySpec);
+		FGameplayAbilitySpec AbilitySpec(
+			Config.AbilityClass,
+			FMath::Max(1, Config.AbilityLevel),
+			InputID,
+			this
+		);
+
+		const FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->GiveAbility(AbilitySpec);
+
+		if (Handle.IsValid() && Config.bActivateOnGranted)
+		{
+			AbilitySystemComponent->TryActivateAbility(Handle);
+		}
 	}
 }
 
-void APlayerCharacter::OnJumpStarted()
+void APlayerCharacter::OnAbilityInputPressed(int32 InputID)
 {
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->AbilityLocalInputPressed(JumpInputID);
+		AbilitySystemComponent->AbilityLocalInputPressed(InputID);
 	}
 }
 
-void APlayerCharacter::OnJumpReleased()
+void APlayerCharacter::OnAbilityInputReleased(int32 InputID)
 {
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->AbilityLocalInputReleased(JumpInputID);
+		AbilitySystemComponent->AbilityLocalInputReleased(InputID);
 	}
 }
 
-void APlayerCharacter::OnJumpCanceled()
+void APlayerCharacter::OnAbilityInputCanceled(int32 InputID)
 {
 	if (!AbilitySystemComponent) return;
 
-	if (JumpAbilityClass)
+	TArray<FGameplayAbilitySpecHandle> HandlesToCancel;
+
+	for (const FGameplayAbilitySpec& Spec : AbilitySystemComponent->GetActivatableAbilities())
 	{
-		FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(JumpAbilityClass);
-		if (Spec && Spec->IsActive())
+		if (Spec.InputID == InputID && Spec.IsActive())
 		{
-			const FGameplayAbilitySpecHandle Handle = Spec->Handle;
-			AbilitySystemComponent->CancelAbilityHandle(Handle);
+			HandlesToCancel.Add(Spec.Handle);
 		}
 	}
 
-	AbilitySystemComponent->AbilityLocalInputReleased(JumpInputID);
+	for (const FGameplayAbilitySpecHandle& Handle : HandlesToCancel)
+	{
+		AbilitySystemComponent->CancelAbilityHandle(Handle);
+	}
+
+	AbilitySystemComponent->AbilityLocalInputReleased(InputID);
 }
 
 void APlayerCharacter::OnJumpChargeTagChanged(FGameplayTag Tag, int32 NewCount)

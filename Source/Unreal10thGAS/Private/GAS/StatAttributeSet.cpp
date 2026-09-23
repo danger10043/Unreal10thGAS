@@ -28,6 +28,15 @@ void UStatAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 {
 	Super::PreAttributeChange(Attribute, NewValue);
 
+	if (Attribute == GetHealthAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, FMath::Max(0.0f, GetMaxHealth()));
+	}
+	else if (Attribute == GetStaminaAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, FMath::Max(0.0f, GetMaxStamina()));
+	}
+
 	if (Attribute == GetCurrentJumpChargeAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, FMath::Max(0.0f, GetMaxJumpCharge()));
@@ -95,6 +104,12 @@ void UStatAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 			const float NewHealth = FMath::Clamp(GetHealth() - FinalDamage, 0.0f, GetMaxHealth());
 			SetHealth(NewHealth);
 		}
+	}
+
+	else if (Data.EvaluatedData.Attribute == GetStaminaCostAttribute())
+	{
+		const float LocalCost = GetStaminaCost();
+		SetStaminaCost(0.0f);
 
 		if (LocalCost > 0)
 		{

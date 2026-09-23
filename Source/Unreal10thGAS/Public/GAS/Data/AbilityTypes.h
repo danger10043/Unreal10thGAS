@@ -19,6 +19,8 @@ enum class EAbilityInputID : uint8
 	Sprint		UMETA(DisplayName = "Sprint"),
 	ChargeJump	UMETA(DisplayName = "Charge Jump"),
 	Blink		UMETA(DisplayName = "Blink"),
+	PlayerJump	UMETA(DisplayName = "PlayerCharacter: Charge Jump"),
+	PlayerMeditation UMETA(DisplayName = "PlayerCharacter: Meditation"),
 };
 
 /**

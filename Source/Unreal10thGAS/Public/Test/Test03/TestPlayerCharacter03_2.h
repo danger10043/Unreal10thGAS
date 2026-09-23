@@ -52,6 +52,15 @@ protected:
 	virtual void OnAbilityInputReleased(EAbilityInputID InputID);
 	// --------------------------------------------------------------------------------------
 	
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
+
+	void UpdateGroundedTag();
+	void OnMoveSpeedChanged(const struct FOnAttributeChangeData& InData);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	float BaseWalkSpeed = 600.0f;
 
 protected:
 	// 3인칭 카메라용 컴포넌트들

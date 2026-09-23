@@ -38,6 +38,36 @@ void UGameplayAbility_PlayerJump::ActivateAbility(
 
 	if (!IsActive()) return;
 
+	if (ChargingCostEffectClass)
+	{
+		FGameplayEffectSpecHandle CostSpecHandle = MakeOutgoingGameplayEffectSpec(
+			Handle, ActorInfo, ActivationInfo, ChargingCostEffectClass, GetAbilityLevel(Handle, ActorInfo)
+		);
+
+		if (!CostSpecHandle.IsValid())
+		{
+			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+			return;
+		}
+
+		ChargingCostEffectHandle = ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, CostSpecHandle);
+
+		if (!IsActive())
+		{
+			if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+			{
+				ASC->RemoveActiveGameplayEffect(ChargingCostEffectHandle);
+				return;
+			}
+		}
+
+		if (!ChargingCostEffectHandle.IsValid())
+		{
+			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+			return;
+		}
+	}
+
 	UAbilityTask_WaitInputRelease* WaitReleaseTask =
 		UAbilityTask_WaitInputRelease::WaitInputRelease(this, true);
 
@@ -189,6 +219,16 @@ void UGameplayAbility_PlayerJump::EndAbility(
 	}
 
 	UAbilitySystemComponent* ASC = ActorInfo ? ActorInfo->AbilitySystemComponent.Get() : nullptr;
+	
+	if (ChargingCostEffectHandle.IsValid())
+	{
+		if (ASC)
+		{
+			ASC->RemoveActiveGameplayEffect(ChargingCostEffectHandle);
+		}
+		ChargingCostEffectHandle.Invalidate();
+	}
+
 	if (ASC && ASC->HasAttributeSetForAttribute(UStatAttributeSet::GetCurrentJumpChargeAttribute()))
 	{
 		ASC->SetNumericAttributeBase(UStatAttributeSet::GetCurrentJumpChargeAttribute(), 0.0f);
@@ -196,4 +236,20 @@ void UGameplayAbility_PlayerJump::EndAbility(
 	ChargeStartTime = 0.0f;
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+bool UGameplayAbility_PlayerJump::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, FGameplayTagContainer* OptionalRelevantTags) const
+{
+	if (!ActorInfo || !Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags))
+	{
+		return false;
+	}
+
+	const UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+	if (!ASC || !ASC->HasAttributeSetForAttribute(UStatAttributeSet::GetStaminaAttribute()))
+	{
+		return false;
+	}
+
+	return ASC->GetNumericAttribute(UStatAttributeSet::GetStaminaAttribute()) >= 10.0f;
 }

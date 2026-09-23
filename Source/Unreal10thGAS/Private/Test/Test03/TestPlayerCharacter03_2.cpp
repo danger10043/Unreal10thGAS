@@ -9,6 +9,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
+#include "GAS/StatAttributeSet.h"
 
 
 ATestPlayerCharacter03_2::ATestPlayerCharacter03_2()
@@ -34,6 +35,7 @@ void ATestPlayerCharacter03_2::PossessedBy(AController * NewController)
 {
 	Super::PossessedBy(NewController);
 
+	UpdateGroundedTag();
 	GiveDefaultAbilities();
 }
 
@@ -129,4 +131,72 @@ void ATestPlayerCharacter03_2::OnAbilityInputReleased(EAbilityInputID InputID)
 	{
 		AbilitySystemComponent->AbilityLocalInputReleased(static_cast<int32>(InputID));
 	}
+}
+
+void ATestPlayerCharacter03_2::BeginPlay()
+{
+	Super::BeginPlay();
+
+	UpdateGroundedTag();
+
+	if (AbilitySystemComponent && StatAttributeSet)
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			UStatAttributeSet::GetMoveSpeedAttribute()).AddUObject(
+				this, &ATestPlayerCharacter03_2::OnMoveSpeedChanged);
+
+		GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed * StatAttributeSet->GetMoveSpeed() / 100.0f;
+	}
+}
+
+void ATestPlayerCharacter03_2::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (!AbilitySystemComponent) return;
+
+	static const FGameplayTag MovingTag = FGameplayTag::RequestGameplayTag(FName("GAS.State.Moving"));
+	constexpr float MoveThreshold = 10.0f;
+	const bool bIsMoving = GetVelocity().SizeSquared2D() >= FMath::Square(MoveThreshold);
+	const bool bHasMovingTag = AbilitySystemComponent->HasMatchingGameplayTag(MovingTag);
+
+	if (bIsMoving && !bHasMovingTag)
+	{
+		AbilitySystemComponent->AddLooseGameplayTag(MovingTag);
+	}
+	else if (!bIsMoving && bHasMovingTag)
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(MovingTag);
+	}
+}
+
+void ATestPlayerCharacter03_2::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+
+	UpdateGroundedTag();
+}
+
+void ATestPlayerCharacter03_2::UpdateGroundedTag()
+{
+	if (!AbilitySystemComponent) return;
+
+	static const FGameplayTag GroundedTag = FGameplayTag::RequestGameplayTag(FName("GAS.State.Grounded"));
+
+	const bool bOnGround = GetCharacterMovement()->IsMovingOnGround();
+	const bool bHasGroundTag = AbilitySystemComponent->HasMatchingGameplayTag(GroundedTag);
+
+	if (bOnGround && !bHasGroundTag)
+	{
+		AbilitySystemComponent->AddLooseGameplayTag(GroundedTag);
+	}
+	else if (!bOnGround && bHasGroundTag)
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(GroundedTag);
+	}
+}
+
+void ATestPlayerCharacter03_2::OnMoveSpeedChanged(const FOnAttributeChangeData& InData)
+{
+	GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed * InData.NewValue / 100.0f;
 }
