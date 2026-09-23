@@ -13,6 +13,7 @@
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
+#include "Framework/TestGASHUD.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -107,10 +108,44 @@ void APlayerCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	SpringArm->bUsePawnControlRotation = true;
+	Camera->bUsePawnControlRotation = false;
+
 	if (ensure(AbilitySystemComponent && StatAttributeSet))
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+		const FGameplayTag JumpChargeTag =
+			FGameplayTag::RequestGameplayTag(TEXT("Player.State.JumpCharge"));
+
+		if (!JumpChargeTagDelegateHandle.IsValid())
+		{
+			JumpChargeTagDelegateHandle = AbilitySystemComponent->RegisterGameplayTagEvent(
+				JumpChargeTag, EGameplayTagEventType::NewOrRemoved)
+				.AddUObject(this, &APlayerCharacter::OnJumpChargeTagChanged);
+		}
+
+		OnJumpChargeTagChanged(JumpChargeTag, AbilitySystemComponent->GetTagCount(JumpChargeTag));
+
 		GiveDefaultAbilities();
+
+		if (APlayerController* PC = Cast<APlayerController>(NewController))
+		{
+			if (PC->IsLocalController())
+			{
+				if (ATestGASHUD* HUD = Cast<ATestGASHUD>(PC->GetHUD()))
+				{
+					HUD->InitHUD(this);
+				}
+			}
+		}
 	}
 }
 
@@ -163,4 +198,29 @@ void APlayerCharacter::OnJumpCanceled()
 	}
 
 	AbilitySystemComponent->AbilityLocalInputReleased(JumpInputID);
+}
+
+void APlayerCharacter::OnJumpChargeTagChanged(FGameplayTag Tag, int32 NewCount)
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement) return;
+
+	const bool bIsCharging = NewCount > 0;
+	if (bIsCharging == bJumpChargeSlowApplied) return;
+
+	bJumpChargeSlowApplied = bIsCharging;
+
+	if (bIsCharging)
+	{
+		WalkSpeedBeforeJumpCharge = Movement->MaxWalkSpeed;
+		CrouchedSpeedBeforeJumpCharge = Movement->MaxWalkSpeedCrouched;
+
+		Movement->MaxWalkSpeed = WalkSpeedBeforeJumpCharge * 0.5f;
+		Movement->MaxWalkSpeedCrouched = CrouchedSpeedBeforeJumpCharge * 0.5f;
+	}
+	else
+	{
+		Movement->MaxWalkSpeed = WalkSpeedBeforeJumpCharge;
+		Movement->MaxWalkSpeedCrouched = CrouchedSpeedBeforeJumpCharge;
+	}
 }

@@ -5,11 +5,18 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GAS/StatAttributeSet.h"
 #include "Player/PlayerCharacter.h"
+#include "NativeGameplayTags.h"
+
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_Player_State_JumpCharge, "Player.State.JumpCharge");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_GameplayCue_Player_JumpCharge, "GameplayCue.Player.JumpCharge");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_GameplayCue_Player_FullChargeJump, "GameplayCue.Player.FullChargeJump");
 
 UGameplayAbility_PlayerJump::UGameplayAbility_PlayerJump()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	bRetriggerInstancedAbility = false;
+
+	ActivationOwnedTags.AddTag(TAG_Player_State_JumpCharge);
 }
 
 void UGameplayAbility_PlayerJump::ActivateAbility(
@@ -25,6 +32,7 @@ void UGameplayAbility_PlayerJump::ActivateAbility(
 		return;
 	}
 
+	bFullChargeNotified = false;
 	ChargeStartTime = World->GetTimeSeconds();
 	UpdateCharge();
 
@@ -44,6 +52,15 @@ void UGameplayAbility_PlayerJump::ActivateAbility(
 		this,
 		&UGameplayAbility_PlayerJump::UpdateCharge,
 		0.02f,
+		true);
+
+	FGameplayCueParameters ChargeCueParameters;
+	ChargeCueParameters.Instigator = GetAvatarActorFromActorInfo();
+	ChargeCueParameters.EffectCauser = GetAvatarActorFromActorInfo();
+
+	K2_AddGameplayCueWithParams(
+		TAG_GameplayCue_Player_JumpCharge,
+		ChargeCueParameters,
 		true);
 
 	WaitReleaseTask->OnRelease.AddDynamic(this, &UGameplayAbility_PlayerJump::OnInputReleased);
@@ -72,7 +89,7 @@ void UGameplayAbility_PlayerJump::OnInputReleased(float TimeHeld)
 		: 0.0f;
 
 	const float BaseJumpSpeed = FMath::Max(0.0f, Character->GetCharacterMovement()->JumpZVelocity);
-	const float ChargedJumpSpeed = BaseJumpSpeed * FMath::Sqrt(1.0f + JumpRatio);
+	const float ChargedJumpSpeed = 2 * BaseJumpSpeed * FMath::Sqrt(1.0f + JumpRatio * 4.5f);
 
 	if (!CommitAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo))
 	{
@@ -83,6 +100,19 @@ void UGameplayAbility_PlayerJump::OnInputReleased(float TimeHeld)
 	if (!IsActive()) return;
 
 	Character->LaunchCharacter(FVector(0.0f, 0.0f, ChargedJumpSpeed), false, true);
+
+	if (MaxCharge > 0.0f && JumpRatio >= 1.0f)
+	{
+		FGameplayCueParameters JumpCueParameters;
+		JumpCueParameters.Instigator = Character;
+		JumpCueParameters.EffectCauser = Character;
+		JumpCueParameters.Location = Character->GetActorLocation();
+		JumpCueParameters.Normal = FVector::UpVector;
+
+		K2_ExecuteGameplayCueWithParams(
+			TAG_GameplayCue_Player_FullChargeJump,
+			JumpCueParameters);
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("[PlayerJump] Ratio=%.2f, LaunchSpeed=%.2f"),
 		JumpRatio, ChargedJumpSpeed);
@@ -132,6 +162,16 @@ void UGameplayAbility_PlayerJump::UpdateCharge()
 	const float MaxCharge = FMath::Max(0.0f, Stats->GetMaxJumpCharge());
 
 	ASC->SetNumericAttributeBase(UStatAttributeSet::GetCurrentJumpChargeAttribute(), MaxCharge * Progress);
+
+	if (!IsActive()) return;
+
+	const float CurrentMaxCharge = Stats->GetMaxJumpCharge();
+	if (!bFullChargeNotified && CurrentMaxCharge > 0.0f
+		&& Stats->GetCurrentJumpCharge() >= CurrentMaxCharge)
+	{
+		bFullChargeNotified = true;
+		Character->PlayFullChargeFlash();
+	}
 }
 
 void UGameplayAbility_PlayerJump::EndAbility(

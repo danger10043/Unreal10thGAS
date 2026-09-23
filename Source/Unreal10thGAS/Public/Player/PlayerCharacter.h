@@ -14,6 +14,7 @@ class UStatAttributeSet;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
+struct FGameplayTag;
 
 UCLASS()
 class UNREAL10THGAS_API APlayerCharacter : public ACharacter, public IAbilitySystemInterface
@@ -25,6 +26,9 @@ public:
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UStatAttributeSet* GetStatAttributeSet() const;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Jump|Effects")
+	void PlayFullChargeFlash();
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
@@ -71,4 +75,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Ability")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
+
+	void OnJumpChargeTagChanged(FGameplayTag Tag, int32 NewCount);
+
+	FDelegateHandle JumpChargeTagDelegateHandle;
+	bool bJumpChargeSlowApplied = false;
+	float WalkSpeedBeforeJumpCharge = 0.0f;
+	float CrouchedSpeedBeforeJumpCharge = 0.0f;
 };

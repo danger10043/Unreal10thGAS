@@ -45,4 +45,5 @@ protected:
 private:
 	FTimerHandle ChargeTimerHandle;
 	float ChargeStartTime = 0.0f;
+	bool bFullChargeNotified = false;
 };
