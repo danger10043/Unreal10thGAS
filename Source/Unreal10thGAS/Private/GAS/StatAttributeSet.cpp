@@ -11,8 +11,14 @@ UStatAttributeSet::UStatAttributeSet()
 	InitStamina(100.0f);
 	InitMaxStamina(100.0f);
 
+	InitMaxJumpCharge(100.0f);
+	InitCurrentJumpCharge(0.0f);
+
 	InitAttackPower(10.0f);
+	InitCriticalChance(0.2f);
 	InitDefencePower(5.0f);
+	InitMoveSpeed(100.0f);	// 100이 보통 속도. 150이면 원래 속도의 1.5배
+
 
 	InitDamage(0.0f);
 	InitStaminaCost(0.0f);
@@ -24,6 +30,24 @@ void UStatAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 
 	if (Attribute == GetHealthAttribute())
 	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, FMath::Max(0.0f, GetMaxHealth()));
+	}
+	else if (Attribute == GetStaminaAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, FMath::Max(0.0f, GetMaxStamina()));
+	}
+
+	if (Attribute == GetCurrentJumpChargeAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, FMath::Max(0.0f, GetMaxJumpCharge()));
+	}
+	else if (Attribute == GetMaxJumpChargeAttribute())
+	{
+		NewValue = FMath::Max(0.0f, NewValue);
+	}
+
+	if (Attribute == GetHealthAttribute())
+	{
 		// Health가 변경되려고 해서 호출되었다.
 		NewValue = FMath::Clamp(NewValue, 0, GetMaxHealth());
 	}
@@ -32,11 +56,28 @@ void UStatAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 		// MaxHealth가 변경되려고 해서 호출되었다.
 		NewValue = FMath::Max(0, NewValue);		
 	}
+	else if (Attribute == GetStaminaAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0, GetMaxStamina());
+	}
+	else if (Attribute == GetMaxStaminaAttribute())
+	{
+		NewValue = FMath::Max(0, NewValue);
+	}
+	else if (Attribute == GetMoveSpeedAttribute())
+	{
+		NewValue = FMath::Max(0, NewValue);
+	}
 }
 
 void UStatAttributeSet::PostAttributeChange(const FGameplayAttribute & Attribute, float OldValue, float NewValue)
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
+
+	if (Attribute == GetMaxJumpChargeAttribute() && GetCurrentJumpCharge() > NewValue)
+	{
+		SetCurrentJumpCharge(FMath::Max(0.0f, NewValue));
+	}
 
 	if (Attribute == GetHealthAttribute())
 	{
@@ -63,6 +104,36 @@ void UStatAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 			const float NewHealth = FMath::Clamp(GetHealth() - FinalDamage, 0.0f, GetMaxHealth());
 			SetHealth(NewHealth);
 		}
+	}
 
+	else if (Data.EvaluatedData.Attribute == GetStaminaCostAttribute())
+	{
+		const float LocalCost = GetStaminaCost();
+		SetStaminaCost(0.0f);
+
+		if (LocalCost > 0)
+		{
+			float FinalCost = LocalCost;
+			FinalCost = FMath::Max(0.0f, FinalCost);			// 0 이하는 안됨
+
+			const float NewStamina = FMath::Clamp(GetStamina() - FinalCost, 0.0f, GetMaxStamina());
+			SetStamina(NewStamina);
+
+			// 값에 따른 추가 처리
+		}
+	}
+}
+
+void UStatAttributeSet::PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const
+{
+	Super::PreAttributeBaseChange(Attribute, NewValue);
+
+	if (Attribute == GetCurrentJumpChargeAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, FMath::Max(0.0f, GetMaxJumpCharge()));
+	}
+	else if (Attribute == GetMaxJumpChargeAttribute())
+	{
+		NewValue = FMath::Max(0.0f, NewValue);
 	}
 }
