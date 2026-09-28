@@ -24,13 +24,14 @@ public:
 	APlayerCharacter();
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	UStatAttributeSet* GetStatAttributeSet() const;
+	const UStatAttributeSet* GetStatAttributeSet() const;
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Jump|Effects")
 	void PlayFullChargeFlash();
 
 protected:
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void PawnClientRestart() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	void Move(const FInputActionValue& Value);

@@ -29,6 +29,7 @@ APlayerCharacter::APlayerCharacter()
 	Camera->bUsePawnControlRotation = false;
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
 	StatAttributeSet = CreateDefaultSubobject<UStatAttributeSet>(TEXT("StatAttributeSet"));
 
 	bUseControllerRotationPitch = false;
@@ -44,9 +45,11 @@ UAbilitySystemComponent* APlayerCharacter::GetAbilitySystemComponent() const
 	return AbilitySystemComponent.Get();
 }
 
-UStatAttributeSet* APlayerCharacter::GetStatAttributeSet() const
+const UStatAttributeSet* APlayerCharacter::GetStatAttributeSet() const
 {
-	return StatAttributeSet.Get();
+	return AbilitySystemComponent
+		? AbilitySystemComponent->GetSet<UStatAttributeSet>()
+		: nullptr;
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -173,9 +176,53 @@ void APlayerCharacter::PossessedBy(AController* NewController)
 	}
 }
 
+void APlayerCharacter::PawnClientRestart()
+{
+	Super::PawnClientRestart();
+
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	SpringArm->bUsePawnControlRotation = true;
+	Camera->bUsePawnControlRotation = true;
+
+	if (ensure(AbilitySystemComponent && StatAttributeSet))
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+		const FGameplayTag JumpChargeTag = FGameplayTag::RequestGameplayTag(TEXT("Player.State.JumpCharge"));
+
+		if (!JumpChargeTagDelegateHandle.IsValid())
+		{
+			JumpChargeTagDelegateHandle = AbilitySystemComponent->RegisterGameplayTagEvent(
+				JumpChargeTag,
+				EGameplayTagEventType::NewOrRemoved).AddUObject(
+					this, &APlayerCharacter::OnJumpChargeTagChanged
+				);
+
+			OnJumpChargeTagChanged(JumpChargeTag, AbilitySystemComponent->GetTagCount(JumpChargeTag));
+		}
+
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			if (PC->IsLocalController())
+			{
+				if (ATestGASHUD* HUD = Cast<ATestGASHUD>(PC->GetHUD()))
+				{
+					HUD->InitHUD(this);
+				}
+			}
+		}
+	}
+}
+
 void APlayerCharacter::GiveDefaultAbilities()
 {
-	if (!HasAuthority() || !AbilitySystemComponent || !DefaultAbilitySet)
+	if (!AbilitySystemComponent || !DefaultAbilitySet)
 	{
 		return;
 	}

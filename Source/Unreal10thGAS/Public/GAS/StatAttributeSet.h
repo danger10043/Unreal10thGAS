@@ -18,6 +18,9 @@ class UNREAL10THGAS_API UStatAttributeSet : public UAttributeSet
 
 public:
 	UStatAttributeSet();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	// CurrentValue 변경 전에 실행되는 함수
 	// 값의 Clamping용도로 사용
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
@@ -32,19 +35,19 @@ public:
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 
 	// ------------------------------------------------------------------
-	UPROPERTY(BlueprintReadOnly, Category = "Base Stat")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Health, Category = "Base Stat")
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, Health);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Base Stat")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxHealth, Category = "Base Stat")
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, MaxHealth);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Base Stat")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Stamina, Category = "Base Stat")
 	FGameplayAttributeData Stamina;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, Stamina);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Base Stat")
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_MaxStamina, Category = "Base Stat")
 	FGameplayAttributeData MaxStamina;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, MaxStamina);
 	// ------------------------------------------------------------------
@@ -81,6 +84,18 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, StaminaCost);
 
 protected:
+	UFUNCTION()
+	void OnRep_Health(const FGameplayAttributeData& OldHealth);
+
+	UFUNCTION()
+	void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);
+
+	UFUNCTION()
+	void OnRep_Stamina(const FGameplayAttributeData& OldStamina);
+
+	UFUNCTION()
+	void OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina);
+
 	// 최대값이 변경 되었을 때 현재 값을 보정하는 함수
 	void AdjustAttributeForMaxChange(
 		float InOldValue,

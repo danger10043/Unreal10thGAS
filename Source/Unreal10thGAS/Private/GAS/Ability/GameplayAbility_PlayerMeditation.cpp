@@ -69,29 +69,35 @@ void UGameplayAbility_PlayerMeditation::ActivateAbility(const FGameplayAbilitySp
 	Movement->DisableMovement();
 	if (!IsActive()) return;
 
-	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(
-		Handle, ActorInfo, ActivationInfo, RecoveryEffectClass, GetAbilityLevel(Handle, ActorInfo)
-	);
-
-	if (!SpecHandle.IsValid())
+	if (ActorInfo->IsNetAuthority())
 	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
+		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(
+			Handle, ActorInfo, ActivationInfo, RecoveryEffectClass, GetAbilityLevel(Handle, ActorInfo)
+		);
+
+		if (!SpecHandle.IsValid())
+		{
+			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+			return;
+		}
+
+		RecoveryEffectHandle = ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
+
+		if (!IsActive())
+		{
+			ASC->RemoveActiveGameplayEffect(RecoveryEffectHandle);
+			RecoveryEffectHandle.Invalidate();
+			return;
+		}
+
+		if (!RecoveryEffectHandle.IsValid())
+		{
+			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+			return;
+		}
 	}
 
-	RecoveryEffectHandle = ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 
-	if (!IsActive())
-	{
-		ASC->RemoveActiveGameplayEffect(RecoveryEffectHandle);
-		RecoveryEffectHandle.Invalidate();
-		return;
-	}
-	if (!RecoveryEffectHandle.IsValid())
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
 
 	WaitReleaseTask->OnRelease.AddDynamic(
 		this, &UGameplayAbility_PlayerMeditation::OnInputReleased

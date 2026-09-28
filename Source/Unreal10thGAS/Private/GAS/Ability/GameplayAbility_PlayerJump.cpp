@@ -38,7 +38,7 @@ void UGameplayAbility_PlayerJump::ActivateAbility(
 
 	if (!IsActive()) return;
 
-	if (ChargingCostEffectClass)
+	if (ActorInfo->IsNetAuthority() && ChargingCostEffectClass)
 	{
 		FGameplayEffectSpecHandle CostSpecHandle = MakeOutgoingGameplayEffectSpec(
 			Handle, ActorInfo, ActivationInfo, ChargingCostEffectClass, GetAbilityLevel(Handle, ActorInfo)
@@ -105,7 +105,7 @@ void UGameplayAbility_PlayerJump::OnInputReleased(float TimeHeld)
 	if (!IsActive()) return;
 
 	APlayerCharacter* Character = Cast<APlayerCharacter>(GetAvatarActorFromActorInfo());
-	UStatAttributeSet* Stats = Character ? Character->GetStatAttributeSet() : nullptr;
+	const UStatAttributeSet* Stats = Character ? Character->GetStatAttributeSet() : nullptr;
 
 	if (!Character || !Stats)
 	{
@@ -114,9 +114,29 @@ void UGameplayAbility_PlayerJump::OnInputReleased(float TimeHeld)
 	}
 
 	const float MaxCharge = Stats->GetMaxJumpCharge();
+	const float CurrentCharge = Stats->GetCurrentJumpCharge();
 	const float JumpRatio = MaxCharge > 0.0f
-		? FMath::Clamp(Stats->GetCurrentJumpCharge() / MaxCharge, 0.0f, 1.0f)
+		? FMath::Clamp(CurrentCharge / MaxCharge, 0.0f, 1.0f)
 		: 0.0f;
+
+	const float ElapsedTime = GetWorld()->GetTimeSeconds() - ChargeStartTime;
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	const UStatAttributeSet* ASCStats = ASC ? ASC->GetSet<UStatAttributeSet>() : nullptr;
+	const FGameplayAttribute ChargeAttribute = UStatAttributeSet::GetCurrentJumpChargeAttribute();
+
+	UE_LOG(LogTemp, Warning,
+		TEXT("[ChargeJumpDebug] Authority=%d Elapsed=%.3f Duration=%.3f SameSet=%d ASCBase=%.3f ASCCurrent=%.3f MemberBase=%.3f MemberCurrent=%.3f ASCMax=%.3f MemberMax=%.3f"),
+		Character->HasAuthority(),
+		ElapsedTime,
+		ChargeDuration,
+		ASCStats == Stats,
+		ASC ? ASC->GetNumericAttributeBase(ChargeAttribute) : -1.0f,
+		ASC ? ASC->GetNumericAttribute(ChargeAttribute) : -1.0f,
+		Stats->CurrentJumpCharge.GetBaseValue(),
+		Stats->GetCurrentJumpCharge(),
+		ASCStats ? ASCStats->GetMaxJumpCharge() : -1.0f,
+		MaxCharge);
 
 	const float BaseJumpSpeed = FMath::Max(0.0f, Character->GetCharacterMovement()->JumpZVelocity);
 	const float ChargedJumpSpeed = 2 * BaseJumpSpeed * FMath::Sqrt(1.0f + JumpRatio * 4.5f);
@@ -177,7 +197,7 @@ void UGameplayAbility_PlayerJump::UpdateCharge()
 	APlayerCharacter* Character = Cast<APlayerCharacter>(GetAvatarActorFromActorInfo());
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	UWorld* World = GetWorld();
-	UStatAttributeSet* Stats = Character ? Character->GetStatAttributeSet() : nullptr;
+	const UStatAttributeSet* Stats = Character ? Character->GetStatAttributeSet() : nullptr;
 
 	if (!Character || !ASC || !World || !Stats
 		|| !Character->GetCharacterMovement()->IsMovingOnGround()

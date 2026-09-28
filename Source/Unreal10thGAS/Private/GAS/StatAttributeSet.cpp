@@ -2,13 +2,14 @@
 
 
 #include "GAS/StatAttributeSet.h"
+#include "Net/UnrealNetwork.h"
 
 UStatAttributeSet::UStatAttributeSet()
 {
 	InitHealth(100.0f);
 	InitMaxHealth(100.0f);
 
-	InitStamina(100.0f);
+	InitStamina(50.0f);
 	InitMaxStamina(100.0f);
 
 	InitMaxJumpCharge(100.0f);
@@ -22,6 +23,36 @@ UStatAttributeSet::UStatAttributeSet()
 
 	InitDamage(0.0f);
 	InitStaminaCost(0.0f);
+}
+
+void UStatAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION_NOTIFY(UStatAttributeSet, Health, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UStatAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UStatAttributeSet, Stamina, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UStatAttributeSet, MaxStamina, COND_None, REPNOTIFY_Always);
+}
+
+void UStatAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UStatAttributeSet, Health, OldHealth);
+}
+
+void UStatAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UStatAttributeSet, MaxHealth, OldMaxHealth);
+}
+
+void UStatAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldStamina)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UStatAttributeSet, Stamina, OldStamina);
+}
+
+void UStatAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UStatAttributeSet, MaxStamina, OldMaxStamina);
 }
 
 void UStatAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
