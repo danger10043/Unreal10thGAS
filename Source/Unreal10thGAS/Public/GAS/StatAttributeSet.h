@@ -21,6 +21,8 @@ public:
 	// CurrentValue 변경 전에 실행되는 함수
 	// 값의 Clamping용도로 사용
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+
+	virtual void PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const override;
 	
 	// CurrentValue 변경 후에 실행되는 함수
 	// 값의 변화 감지나, UI에 반영하기 위해 사용
@@ -45,6 +47,14 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Base Stat")
 	FGameplayAttributeData MaxStamina;
 	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, MaxStamina);
+	// ------------------------------------------------------------------
+	UPROPERTY(BlueprintReadOnly, Category = "Jump")
+	FGameplayAttributeData CurrentJumpCharge;
+	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, CurrentJumpCharge);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Jump")
+	FGameplayAttributeData MaxJumpCharge;
+	ATTRIBUTE_ACCESSORS_BASIC(UStatAttributeSet, MaxJumpCharge);
 	// ------------------------------------------------------------------
 	UPROPERTY(BlueprintReadOnly, Category = "Attack Stat")
 	FGameplayAttributeData AttackPower;
