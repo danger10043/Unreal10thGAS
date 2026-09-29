@@ -30,6 +30,13 @@ public:
 	void PlayFullChargeFlash();
 
 protected:
+	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaTime) override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI|Health")
+	TObjectPtr<class UWidgetComponent> HealthBarComponent;
+
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void PawnClientRestart() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;

@@ -13,11 +13,17 @@
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Widget/HealthBarWidget.h"
 #include "Framework/TestGASHUD.h"
 
 APlayerCharacter::APlayerCharacter()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickGroup = TG_PostUpdateWork;
+	PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
@@ -27,6 +33,18 @@ APlayerCharacter::APlayerCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 	Camera->bUsePawnControlRotation = false;
+
+	HealthBarComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarComponent"));
+	HealthBarComponent->SetupAttachment(RootComponent);
+	HealthBarComponent->SetWidgetSpace(EWidgetSpace::World);
+	HealthBarComponent->SetDrawSize(FVector2D(900.0f, 200.0f));
+	HealthBarComponent->SetPivot(FVector2D(0.5f, 0.5f));
+	HealthBarComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 140.0f));
+	HealthBarComponent->SetRelativeScale3D(FVector(0.25f));
+	HealthBarComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HealthBarComponent->SetGenerateOverlapEvents(false);
+	HealthBarComponent->SetCastShadow(false);
+	HealthBarComponent->SetVisibility(false);
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
@@ -38,6 +56,59 @@ APlayerCharacter::APlayerCharacter()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
+}
+
+void APlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (GetNetMode() == NM_DedicatedServer || !HealthBarComponent)
+	{
+		return;
+	}
+
+	HealthBarComponent->InitWidget();
+}
+
+void APlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (GetNetMode() == NM_DedicatedServer || !HealthBarComponent)
+	{
+		return;
+	}
+
+	APlayerController* LocalPC = UGameplayStatics::GetPlayerController(this, 0);
+	if (!LocalPC || !LocalPC->IsLocalController() || LocalPC->GetPawn() == this)
+	{
+		HealthBarComponent->SetVisibility(false);
+		return;
+	}
+
+	UHealthBarWidget* HealthBar = Cast<UHealthBarWidget>(HealthBarComponent->GetUserWidgetObject());
+	const UStatAttributeSet* Attributes = GetStatAttributeSet();
+	if (!HealthBar || !Attributes)
+	{
+		HealthBarComponent->SetVisibility(false);
+		return;
+	}
+
+	const FVector WidgetLocation = GetActorLocation() + FVector(0.0f, 0.0f, GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 30.0f);
+	HealthBarComponent->SetWorldLocation(WidgetLocation);
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+	LocalPC->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	const FVector ToCamera = CameraLocation - WidgetLocation;
+	if (!ToCamera.IsNearlyZero())
+	{
+		HealthBarComponent->SetWorldRotation(ToCamera.Rotation());
+	}
+
+	HealthBar->SetHealth(Attributes->GetHealth(), Attributes->GetMaxHealth());
+	HealthBarComponent->SetVisibility(true);
 }
 
 UAbilitySystemComponent* APlayerCharacter::GetAbilitySystemComponent() const
